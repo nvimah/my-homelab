@@ -12,7 +12,7 @@ This repository documents my homelab journey, starting with the essential founda
 - **Docker + Portainer** - Container management platform
 - **Tailscale** - Secure remote access VPN
 
-## 🖥️## Hardware Specifications
+## 🖥️ Hardware Specifications
 
 - **Server**: Lenovo laptop  
   - CPU: Intel Celeron N4000, 2 cores / 2 threads  
