@@ -1,230 +1,255 @@
-# 🏠 Homelab Documentation - Phase 1: Foundation
+# 🏠 My Personal Homelab
 
-## 📋 Overview
+![Status](https://img.shields.io/badge/status-active-success)
+![OS](https://img.shields.io/badge/OS-Ubuntu-blue)
+![Docker](https://img.shields.io/badge/Containerization-Docker-informational)
+![Automation](https://img.shields.io/badge/Automation-Enabled-brightgreen)
+![Learning](https://img.shields.io/badge/Focus-Cloud%20%7C%20Security%20%7C%20Automation-yellow)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-This repository documents my homelab journey, starting with the essential foundation components. Phase 1 establishes the core infrastructure needed for all future expansions.
-
-## 🎯 Phase 1: Foundation Components
-
-### ✅ Completed Infrastructure
-
-- **Ubuntu Server (Minimal)** - Base operating system
-- **Docker + Portainer** - Container management platform
-- **Tailscale** - Secure remote access VPN
-
-## 🖥️ Hardware Specifications
-
-- **Server**: Lenovo laptop  
-  - CPU: Intel Celeron N4000, 2 cores / 2 threads  
-  - RAM: 4 GB (2.5 GB free, 3.66 GB swap)  
-  - Storage: 465.8 GB HDD  
-  - GPU: Intel UHD 600 (for light desktop use only)
-
-- **Network**:  
-  - Using phone hotspot for internet  
-  - Tailscale VPN for remote access between devices
-
-- **Additional Hardware**:  
-  - Windows client laptop for remote management  
-  - Optional peripherals (monitor, keyboard, etc.) as needed
-
-
-## 🛠️ Installation Guide
-
-### 1. Ubuntu Server Setup
-
-```bash
-# Initial system update
-sudo apt update && sudo apt upgrade -y
-
-# Install essential packages
-sudo apt install -y curl wget git htop neofetch
-```
-
-### 2. Docker Installation
-
-```bash
-# Remove old Docker versions
-sudo apt-get remove docker docker-engine docker.io containerd runc
-
-# Install Docker's official GPG key
-sudo apt-get update
-sudo apt-get install ca-certificates curl gnupg lsb-release
-sudo mkdir -m 0755 -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-
-# Add Docker repository
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# Install Docker Engine
-sudo apt-get update
-sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-# Add user to docker group
-sudo usermod -aG docker $USER
-
-# Start and enable Docker
-sudo systemctl enable docker
-sudo systemctl start docker
-```
-
-### 3. Portainer Installation
-
-```bash
-# Create Portainer volume
-docker volume create portainer_data
-
-# Run Portainer container
-docker run -d -p 8000:8000 -p 9443:9443 --name portainer --restart=always \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v portainer_data:/data \
-  portainer/portainer-ce:latest
-```
-
-**Access Portainer**: `https://your-server-ip:9443`
-
-### 4. Tailscale Installation
-
-```bash
-# Add Tailscale's package signing key and repository
-curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/jammy.noarmor.gpg | sudo tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
-curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/jammy.list | sudo tee /etc/apt/sources.list.d/tailscale.list
-
-# Install Tailscale
-sudo apt update
-sudo apt install tailscale
-
-# Connect to your Tailscale network
-sudo tailscale up
-
-# Enable IP forwarding for subnet routing (optional)
-echo 'net.ipv4.ip_forward = 1' | sudo tee -a /etc/sysctl.conf
-echo 'net.ipv6.conf.all.forwarding = 1' | sudo tee -a /etc/sysctl.conf
-sudo sysctl -p /etc/sysctl.conf
-```
-
-## 🔧 Configuration
-
-### Docker Compose Setup
-
-Create a `docker-compose.yml` file for managing services:
-
-```yaml
-version: '3.8'
-
-services:
-  portainer:
-    image: portainer/portainer-ce:latest
-    container_name: portainer
-    restart: unless-stopped
-    ports:
-      - "8000:8000"
-      - "9443:9443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
-
-volumes:
-  portainer_data:
-```
-
-### Firewall Configuration
-
-```bash
-# Enable UFW
-sudo ufw enable
-
-# Allow SSH
-sudo ufw allow ssh
-
-# Allow Portainer
-sudo ufw allow 9443/tcp
-sudo ufw allow 8000/tcp
-
-# Allow Tailscale
-sudo ufw allow 41641/udp
-```
-
-## 🌐 Network Access
-
-### Local Access
-- **Portainer**: `https://[SERVER-IP]:9443`
-- **SSH**: `ssh username@[SERVER-IP]`
-
-### Remote Access (via Tailscale)
-- **Portainer**: `https://[TAILSCALE-IP]:9443`
-- **SSH**: `ssh username@[TAILSCALE-IP]`
-
-## 🔍 Verification & Testing
-
-### Verify Docker Installation
-```bash
-# Check Docker version
-docker --version
-
-# Test Docker
-docker run hello-world
-```
-
-### Verify Portainer
-1. Navigate to `https://your-server-ip:9443`
-2. Create admin account
-3. Connect to local Docker environment
-4. Verify container visibility
-
-### Verify Tailscale
-```bash
-# Check Tailscale status
-sudo tailscale status
-
-# Test connectivity from remote device
-ping [TAILSCALE-IP]
-```
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-**Docker Permission Denied**
-```bash
-# Re-login after adding user to docker group
-exit
-# SSH back in, or run:
-newgrp docker
-```
-
-**Portainer SSL Certificate Warning**
-- This is expected on first run
-- Click "Advanced" → "Proceed to [IP] (unsafe)"
-- Consider setting up proper SSL certificates later
-
-**Tailscale Connection Issues**
-```bash
-# Restart Tailscale
-sudo systemctl restart tailscaled
-sudo tailscale up
-```
-## 📚 Resources
-
-- [Docker Documentation](https://docs.docker.com/)
-- [Portainer Documentation](https://docs.portainer.io/)
-- [Tailscale Documentation](https://tailscale.com/kb/)
-- [Ubuntu Server Guide](https://ubuntu.com/server/docs)
-
-## 🤝 Contributing
-
-This is a personal homelab documentation project, but feel free to:
-- Report issues or suggest improvements
-- Share your own homelab experiences
-- Contribute to the documentation
-
-## 📄 License
-
-This documentation is released under the MIT License.
+> A personal self-hosted environment built for automation, media management, cloud learning, and cybersecurity experimentation.
 
 ---
 
-**Last Updated**: [Date]  
-**Status**: ✅ Phase 1 Complete
+## 🧭 Table of Contents
+
+- **Hardware Overview**
+- **Current Setup**
+  - Core Services: Nextcloud, Jellyfin (Sonarr/Radarr/Lidarr/qBittorrent), Portainer, Tailscale, Uptime Kuma
+- **Learning & Experimentation**
+- **Future Plans / Roadmap**
+- **Vision Summary**
+- **Repository Structure**
+- **Architecture Overview**
+- **Screenshots**
+- **Author**
+- **License**
+
+---
+
+## 🖥️ Hardware Overview
+
+| Component | Specification |
+|------------|---------------|
+| **Device** | Lenovo Laptop |
+| **CPU** | Intel Celeron N4000 (2 cores / 2 threads) |
+| **RAM** | 4 GB (2.5 GB usable, 3.66 GB swap) |
+| **Storage** | 465.8 GB HDD |
+| **GPU** | Intel UHD 600 (for light desktop use) |
+
+⚙️ The system runs efficiently on modest hardware, focusing on lightweight containers and automation.
+
+---
+
+## ⚙️ Current Setup
+
+- **OS**: Ubuntu  
+- **Containerization**: Docker (managed via Portainer)  
+- **Remote Access**: Tailscale  
+- **Monitoring**: Uptime Kuma  
+
+### Core Services
+
+#### 🗂️ Nextcloud
+Personal cloud used for:
+- File backups  
+- Photo and video storage  
+- Contact management  
+
+#### 🎬 Jellyfin
+Handles all media management and playback:
+- Integrated with:
+  - **Sonarr** – TV show automation  
+  - **Radarr** – Movie automation  
+  - **Lidarr** – Music automation  
+  - **qBittorrent** – Torrent handling  
+- Fully automated for fetching, organizing, and serving media  
+- Connected with **Ordinary App** for enhanced UI and access  
+
+---
+
+## 🧠 Learning & Experimentation Environment
+
+This lab doubles as a hands-on learning platform.
+
+### 🔐 Kali Linux Container
+- Dedicated sandbox for security testing, ethical hacking, and network troubleshooting  
+- Used to safely break, test, and fix configurations  
+- Supports real-world cybersecurity training  
+
+### ☁️ Cloud Engineering
+- Practicing AWS and hybrid setups locally  
+- Testing deployments, container networking, and automation scripts  
+- Experimenting with CI/CD concepts using lightweight infrastructure  
+
+🧪 The goal: to learn by building, breaking, and rebuilding.
+
+---
+
+## 🚀 Future Plans / Roadmap
+
+| Tool | Description |
+|------|--------------|
+| **MeTube** | Browser-based video downloader for tutorials and learning content |
+| **PodGrab** | Podcast downloader with library integration |
+| **Home Assistant** | Smart home and IoT automation experiments |
+| **Hammond** | Self-hosted bookmark and knowledge management |
+| **Google Calendar Integration** | Sync tasks and events with Nextcloud |
+| **Neon** | Workflow automation and container orchestration |
+| **Starlink PDF** | PDF and document automation system |
+| **IT Tools Suite** | Networking and sysadmin utilities dashboard |
+
+Each addition is aimed at enhancing automation, self-sufficiency, and technical learning.
+
+---
+
+## 🧩 Vision Summary
+
+This homelab currently serves as a:
+- Private cloud (Nextcloud)
+- Automated media hub (Jellyfin stack)
+- Secure remote lab (Tailscale + Kali)
+- Monitoring and uptime system (Uptime Kuma)
+
+Planned expansions will transform it into a complete self-hosted tech ecosystem:
+- Automation-first
+- Cloud-integrated
+- Security-aware
+- Learning-driven
+
+💡 A sandbox for exploring everything tech — from Docker to DevOps to cybersecurity.
+
+---
+
+## 📂 Repository Structure
+
+Below is the current repository structure followed by a suggested layout as the project grows.
+
+### Current
+```text
+/
+├── LICENSE
+└── README.md
+```
+
+### Suggested (scales with features)
+```text
+/
+├── containers/                # Per-service Docker Compose stacks
+│   ├── nextcloud/
+│   │   ├── docker-compose.yml
+│   │   └── README.md
+│   ├── jellyfin/
+│   │   ├── docker-compose.yml
+│   │   └── README.md
+│   ├── sonarr/  radarr/  lidarr/  qbittorrent/
+│   ├── uptime-kuma/  portainer/
+│   └── traefik/                 # (optional) reverse proxy + TLS
+│
+├── scripts/                   # Utilities for backups, maintenance, bootstrap
+│   ├── backups/
+│   ├── maintenance/
+│   └── bootstrap.sh
+│
+├── ansible/                   # (optional) infra-as-code for provisioning
+│   ├── inventories/
+│   ├── roles/
+│   └── playbooks/
+│
+├── k8s/                       # (optional) if migrating to Kubernetes
+│   ├── namespaces/
+│   ├── apps/
+│   └── networking/
+│
+├── docs/                      # Guides, runbooks, notes
+│   ├── guides/
+│   └── diagrams/
+│
+├── assets/                    # Images for README and docs
+│   ├── portainer-dashboard.png
+│   ├── jellyfin-ui.png
+│   ├── nextcloud-ui.png
+│   └── uptime-kuma.png
+│
+├── .env.example               # Example environment variables
+├── LICENSE
+└── README.md
+```
+
+> Note: Some folders are placeholders to guide future growth. Add them as services are introduced.
+
+---
+
+## 🗺️ Architecture Overview
+
+A high-level view of how services interact inside the homelab.
+
+```mermaid
+flowchart LR
+  subgraph RemoteAccess[Remote Access]
+    TS[Tailscale]
+  end
+
+  subgraph Host[Ubuntu Host]
+    DOCKER[Docker Engine]
+    PT[Portainer]
+    UK[Uptime Kuma]
+    NC[Nextcloud]
+    JF[Jellyfin]
+    SR[Sonarr]
+    RR[Radarr]
+    LR[Lidarr]
+    QB[qBittorrent]
+    KL[Kali Container]
+  end
+
+  TS --- Host
+  PT --> DOCKER
+  UK --> DOCKER
+
+  JF --> SR
+  JF --> RR
+  JF --> LR
+  JF --> QB
+
+  DOCKER --- NC
+  DOCKER --- JF
+  DOCKER --- UK
+  DOCKER --- PT
+  DOCKER --- KL
+
+  Clients[(Mobile / Web Clients)] --- TS
+  Clients --- JF
+  Clients --- NC
+```
+
+---
+
+## 🖼️ Screenshots
+
+_Add screenshots or terminal previews here._
+
+| Description | Screenshot |
+|--------------|-------------|
+| Portainer Dashboard | ![Portainer](assets/portainer-dashboard.png) |
+| Jellyfin Media UI | ![Jellyfin](assets/jellyfin-ui.png) |
+| Nextcloud Web Interface | ![Nextcloud](assets/nextcloud-ui.png) |
+| Uptime Kuma Monitoring | ![UptimeKuma](assets/uptime-kuma.png) |
+
+---
+
+## 🧑‍💻 Author
+
+**Sharon Wainaina**  
+Tech Enthusiast | Cloud Learner | Automation Builder  
+💬 Always experimenting. Always learning.
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License**. See [`LICENSE`](LICENSE) for details.
+
+---
+
+If this repo inspires you, consider starring it to follow along ⭐
